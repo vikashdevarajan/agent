@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>IAM Invoke Console</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #0f1115;
+    --panel: #171a21;
+    --border: #2a2e37;
+    --text: #e8e8ec;
+    --muted: #9aa0ac;
+    --accent: #5b8cff;
+    --accent-text: #ffffff;
+    --ok: #3ddc84;
+    --ok-bg: rgba(61, 220, 132, 0.12);
+    --err: #ff5d5d;
+    --err-bg: rgba(255, 93, 93, 0.12);
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f5f6f8;
+      --panel: #ffffff;
+      --border: #dfe2e8;
+      --text: #1b1e24;
+      --muted: #5b6270;
+      --accent: #2f6bff;
+      --ok: #1a9c56;
+      --ok-bg: rgba(26, 156, 86, 0.1);
+      --err: #d43c3c;
+      --err-bg: rgba(212, 60, 60, 0.08);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1115; --panel: #171a21; --border: #2a2e37; --text: #e8e8ec; --muted: #9aa0ac;
+    --accent: #5b8cff; --ok: #3ddc84; --ok-bg: rgba(61, 220, 132, 0.12);
+    --err: #ff5d5d; --err-bg: rgba(255, 93, 93, 0.12);
+  }
+  :root[data-theme="light"] {
+    --bg: #f5f6f8; --panel: #ffffff; --border: #dfe2e8; --text: #1b1e24; --muted: #5b6270;
+    --accent: #2f6bff; --ok: #1a9c56; --ok-bg: rgba(26, 156, 86, 0.1);
+    --err: #d43c3c; --err-bg: rgba(212, 60, 60, 0.08);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 2rem 1.25rem 4rem;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; }
+  header { margin-bottom: 1.5rem; }
+  h1 { font-size: 1.5rem; margin: 0 0 0.25rem; }
+  p.sub { color: var(--muted); margin: 0; font-size: 0.9rem; }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    align-items: start;
+  }
+  @media (max-width: 880px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem;
+  }
+  .panel h2 {
+    font-size: 0.95rem;
+    margin: 0 0 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  label {
+    display: block;
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-bottom: 0.3rem;
+    margin-top: 0.9rem;
+  }
+  label:first-of-type { margin-top: 0; }
+  input, textarea {
+    width: 100%;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.55rem 0.65rem;
+    color: var(--text);
+    font-size: 0.9rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  textarea { resize: vertical; }
+  input:focus, textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+  .payload-label-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-top: 0.9rem;
+  }
+  .payload-label-row label { margin: 0; }
+  .payload-actions { display: flex; align-items: center; gap: 0.6rem; }
+  .json-badge {
+    font-size: 0.72rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  .json-badge.valid { color: var(--ok); background: var(--ok-bg); }
+  .json-badge.invalid { color: var(--err); background: var(--err-bg); }
+  .link-btn {
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-size: 0.78rem;
+    cursor: pointer;
+    padding: 0;
+    text-decoration: underline;
+  }
+  #payload {
+    min-height: 220px;
+    font-size: 0.92rem;
+    line-height: 1.5;
+  }
+
+  button.primary {
+    margin-top: 1.25rem;
+    width: 100%;
+    background: var(--accent);
+    color: var(--accent-text);
+    border: none;
+    border-radius: 6px;
+    padding: 0.7rem 1.2rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button.primary:disabled { opacity: 0.6; cursor: default; }
+
+  .banner {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    border-radius: 8px;
+    padding: 0.75rem 0.9rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 1rem;
+    background: var(--border);
+    color: var(--muted);
+  }
+  .banner.ok { background: var(--ok-bg); color: var(--ok); }
+  .banner.err { background: var(--err-bg); color: var(--err); }
+  .banner .dot { width: 9px; height: 9px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+  .banner .meta { font-weight: 400; font-size: 0.8rem; opacity: 0.85; margin-left: auto; color: inherit; }
+
+  pre#result {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.85rem;
+    font-size: 0.85rem;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    min-height: 220px;
+    margin: 0;
+  }
+  .hint { color: var(--muted); font-size: 0.78rem; margin-top: 0.6rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>IAM Invoke Console</h1>
+    <p class="sub">Edit the request — agent, tool, operation, and payload — and send it straight to your deployed IAM for a live allow/deny demo.</p>
+  </header>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>Request</h2>
+
+      <label for="iam_url">IAM URL</label>
+      <input id="iam_url" value="http://localhost:8000" />
+
+      <div class="row2">
+        <div>
+          <label for="agent_id">agent_id</label>
+          <input id="agent_id" placeholder="agt_..." />
+        </div>
+        <div>
+          <label for="tool_id">tool_id</label>
+          <input id="tool_id" placeholder="tool_..." />
+        </div>
+      </div>
+
+      <label for="secret">secret</label>
+      <input id="secret" type="password" placeholder="shown once when the agent was approved" />
+
+      <label for="operation">operation</label>
+      <input id="operation" placeholder="say_hi" />
+
+      <div class="payload-label-row">
+        <label for="payload">payload (JSON)</label>
+        <div class="payload-actions">
+          <span class="json-badge valid" id="jsonBadge">valid</span>
+          <button class="link-btn" id="formatBtn" type="button">Format</button>
+        </div>
+      </div>
+      <textarea id="payload" spellcheck="false">{
+  "query": "hello"
+}</textarea>
+      <p class="hint">Any JSON object — add, remove, or nest whatever keys the tool operation expects.</p>
+
+      <button class="primary" id="send">Invoke</button>
+    </div>
+
+    <div class="panel">
+      <h2>Result</h2>
+      <div class="banner" id="banner">
+        <span class="dot"></span>
+        <span id="bannerText">No request sent yet.</span>
+        <span class="meta" id="bannerMeta"></span>
+      </div>
+      <pre id="result">—</pre>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const sendBtn = $("send");
+const banner = $("banner");
+const bannerText = $("bannerText");
+const bannerMeta = $("bannerMeta");
+const resultEl = $("result");
+const payloadEl = $("payload");
+const jsonBadge = $("jsonBadge");
+const formatBtn = $("formatBtn");
+
+function parsePayload() {
+  const raw = payloadEl.value.trim();
+  return raw ? JSON.parse(raw) : {};
+}
+
+function refreshJsonBadge() {
+  try {
+    parsePayload();
+    jsonBadge.textContent = "valid";
+    jsonBadge.className = "json-badge valid";
+    return true;
+  } catch (e) {
+    jsonBadge.textContent = "invalid";
+    jsonBadge.className = "json-badge invalid";
+    return false;
+  }
+}
+payloadEl.addEventListener("input", refreshJsonBadge);
+
+formatBtn.addEventListener("click", () => {
+  try {
+    const parsed = parsePayload();
+    payloadEl.value = JSON.stringify(parsed, null, 2);
+    refreshJsonBadge();
+  } catch (e) {
+    // leave as-is; badge already shows invalid
+  }
+});
+
+function setBanner(kind, text, meta) {
+  banner.className = "banner" + (kind ? " " + kind : "");
+  bannerText.textContent = text;
+  bannerMeta.textContent = meta || "";
+}
+
+sendBtn.addEventListener("click", async () => {
+  const iam_url = $("iam_url").value.trim();
+  const agent_id = $("agent_id").value.trim();
+  const secret = $("secret").value;
+  const tool_id = $("tool_id").value.trim();
+  const operation = $("operation").value.trim();
+  let payload;
+
+  try {
+    payload = parsePayload();
+  } catch (e) {
+    setBanner("err", "Payload is not valid JSON.");
+    resultEl.textContent = String(e);
+    return;
+  }
+
+  if (!iam_url || !agent_id || !secret || !tool_id || !operation) {
+    setBanner("err", "Fill in IAM URL, agent_id, secret, tool_id and operation.");
+    return;
+  }
+
+  sendBtn.disabled = true;
+  setBanner("", "Sending…");
+  resultEl.textContent = "—";
+
+  try {
+    const res = await fetch("/api/invoke", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ iam_url, agent_id, secret, tool_id, operation, payload }),
+    });
+    const data = await res.json();
+
+    if (data.error) {
+      setBanner("err", "Request failed.");
+      resultEl.textContent = data.error;
+    } else {
+      const allowed = data.response && data.response.allowed;
+      setBanner(
+        allowed ? "ok" : "err",
+        allowed ? "ALLOWED" : "DENIED",
+        `IAM HTTP ${data.http_status}`
+      );
+      resultEl.textContent = JSON.stringify(data.response, null, 2);
+    }
+  } catch (e) {
+    setBanner("err", "Could not reach the console backend.");
+    resultEl.textContent = String(e);
+  } finally {
+    sendBtn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
